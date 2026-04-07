@@ -1,0 +1,23 @@
+{
+  "project_name": "DigitOCR_Project",
+  "success": false,
+  "platform": "windows",
+  "python_version": "3.10.4",
+  "venv_dir": "D:\\PaddleOCR\\DigitOCR_Project\\.venv",
+  "log_file": "D:\\PaddleOCR\\DigitOCR_Project\\.runtime\\bootstrap\\logs\\bootstrap-20260319-133340.log",
+  "error_message": "name 'ensure_virtualenv' is not defined",
+  "steps": [
+    {
+      "name": "load-config",
+      "status": "completed",
+      "started_at": 1773898420.3834727,
+      "finished_at": 1773898420.3834727,
+      "detail": "Loaded 2 manifest definition(s)."
+    }
+  ],
+  "state": {
+    "platform": "windows",
+    "python_version": "3.10.4",
+    "manifests": {}
+  }
+}

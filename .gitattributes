@@ -1,0 +1,4 @@
+DigitOCR_Project/.venv/**/*.pyd filter=lfs diff=lfs merge=lfs -text
+DigitOCR_Project/.venv/**/*.dll filter=lfs diff=lfs merge=lfs -text
+DigitOCR_Project/.runtime/**/*.pdiparams filter=lfs diff=lfs merge=lfs -text
+DigitOCR_Project/.runtime/**/*.body filter=lfs diff=lfs merge=lfs -text

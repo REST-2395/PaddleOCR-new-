@@ -1,0 +1,15 @@
+2026-03-20 15:07:36,776 [INFO] Skipping bootstrap package upgrade by request.
+2026-03-20 15:07:36,778 [INFO] Skipping D:\PaddleOCR\DigitOCR_Project\requirements.txt because the manifest fingerprint matches the last successful install.
+2026-03-20 15:07:36,778 [INFO] Skipping optional manifest D:\PaddleOCR\DigitOCR_Project\package.json because it does not exist.
+2026-03-20 15:07:36,785 [INFO] Bootstrap completed successfully.
+2026-03-20 15:07:36,786 [INFO] JSON report: D:\PaddleOCR\DigitOCR_Project\.runtime\bootstrap\reports\bootstrap-20260320-150736.json
+2026-03-20 15:07:36,786 [INFO] Skipping bootstrap package upgrade by request.
+2026-03-20 15:07:36,787 [INFO] Skipping bootstrap package upgrade by request.
+2026-03-20 15:07:36,789 [INFO] Skipping D:\PaddleOCR\DigitOCR_Project\requirements.txt because the manifest fingerprint matches the last successful install.
+2026-03-20 15:07:36,789 [INFO] Skipping optional manifest D:\PaddleOCR\DigitOCR_Project\package.json because it does not exist.
+2026-03-20 15:07:36,789 [INFO] Skipping D:\PaddleOCR\DigitOCR_Project\requirements.txt because the manifest fingerprint matches the last successful install.
+2026-03-20 15:07:36,790 [INFO] Skipping optional manifest D:\PaddleOCR\DigitOCR_Project\package.json because it does not exist.
+2026-03-20 15:07:36,793 [INFO] Bootstrap completed successfully.
+2026-03-20 15:07:36,794 [INFO] JSON report: D:\PaddleOCR\DigitOCR_Project\.runtime\bootstrap\reports\bootstrap-20260320-150736.json
+2026-03-20 15:07:36,794 [INFO] Bootstrap completed successfully.
+2026-03-20 15:07:36,795 [INFO] JSON report: D:\PaddleOCR\DigitOCR_Project\.runtime\bootstrap\reports\bootstrap-20260320-150736.json

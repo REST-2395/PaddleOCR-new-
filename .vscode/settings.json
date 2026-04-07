@@ -1,0 +1,11 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "code-runner.runInTerminal": true,
+    "code-runner.fileDirectoryAsCwd": true,
+    "code-runner.executorMap": {
+        "python": ".\\.venv\\Scripts\\python.exe -u"
+    },
+    "code-runner.executorMapByFileExtension": {
+        ".pyw": ".\\.venv\\Scripts\\python.exe"
+    }
+}
