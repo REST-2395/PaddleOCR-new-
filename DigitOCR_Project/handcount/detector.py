@@ -153,15 +153,14 @@ class HandDetector:
         results: Any,
         image_shape: tuple[int, ...],
     ) -> tuple[HandCountItem, ...]:
-        multi_hand_landmarks = tuple(getattr(results, "multi_hand_landmarks", ()) or ())
-        multi_handedness = tuple(getattr(results, "multi_handedness", ()) or ())
-        if not multi_hand_landmarks:
+        landmark_lists, handedness_lists = self._adapt_results(results)
+        if not landmark_lists:
             return ()
 
         items: list[HandCountItem] = []
-        for index, landmark_list in enumerate(multi_hand_landmarks):
+        for index, landmark_list in enumerate(landmark_lists):
             landmarks = self._pixel_landmarks(landmark_list, image_shape=image_shape)
-            handedness_info = multi_handedness[index] if index < len(multi_handedness) else None
+            handedness_info = handedness_lists[index] if index < len(handedness_lists) else None
             handedness = self._handedness_label(handedness_info)
             score = self._handedness_score(handedness_info)
             finger_states = self.fingers_up(handedness, landmarks)
@@ -176,6 +175,16 @@ class HandDetector:
                 )
             )
         return tuple(items)
+
+    def _adapt_results(self, results: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
+        if self._backend == "tasks":
+            landmarks = tuple(getattr(results, "hand_landmarks", ()) or ())
+            handedness = tuple(getattr(results, "handedness", ()) or ())
+            return landmarks, handedness
+
+        landmarks = tuple(getattr(results, "multi_hand_landmarks", ()) or ())
+        handedness = tuple(getattr(results, "multi_handedness", ()) or ())
+        return landmarks, handedness
 
     def _pixel_landmarks(
         self,
@@ -193,23 +202,45 @@ class HandDetector:
         return tuple(points)
 
     def _handedness_label(self, handedness_info: Any) -> HandednessLabel:
-        if handedness_info is None:
-            return "Unknown"
-        classifications = tuple(getattr(handedness_info, "classification", ()) or handedness_info or ())
+        classifications = self._handedness_entries(handedness_info)
         if not classifications:
             return "Unknown"
-        label = str(getattr(classifications[0], "label", "Unknown"))
-        if label in {"Left", "Right"}:
-            return label
+        category = classifications[0]
+        label_candidates = (
+            getattr(category, "label", None),
+            getattr(category, "category_name", None),
+            getattr(category, "display_name", None),
+        )
+        for label in label_candidates:
+            if label in {"Left", "Right"}:
+                return self._mirrored_handedness(label)
         return "Unknown"
 
     def _handedness_score(self, handedness_info: Any) -> float:
-        if handedness_info is None:
-            return 0.0
-        classifications = tuple(getattr(handedness_info, "classification", ()) or handedness_info or ())
+        classifications = self._handedness_entries(handedness_info)
         if not classifications:
             return 0.0
-        return float(getattr(classifications[0], "score", 0.0))
+        return float(getattr(classifications[0], "score", 0.0) or 0.0)
+
+    def _handedness_entries(self, handedness_info: Any) -> tuple[Any, ...]:
+        if handedness_info is None:
+            return ()
+
+        classifications = getattr(handedness_info, "classification", None)
+        if classifications is not None:
+            return tuple(classifications or ())
+
+        try:
+            return tuple(handedness_info or ())
+        except TypeError:
+            return (handedness_info,)
+
+    def _mirrored_handedness(self, label: str) -> HandednessLabel:
+        if label == "Left":
+            return "Right"
+        if label == "Right":
+            return "Left"
+        return "Unknown"
 
     def _create_tasks_hand_landmarker(
         self,

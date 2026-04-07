@@ -53,6 +53,16 @@ def _classification(label: str, score: float = 0.99) -> object:
     return SimpleNamespace(classification=[SimpleNamespace(label=label, score=score)])
 
 
+def _task_categories(label: str, score: float = 0.99, *, display_name: str | None = None) -> list[object]:
+    return [
+        SimpleNamespace(
+            category_name=label,
+            display_name=display_name if display_name is not None else label,
+            score=score,
+        )
+    ]
+
+
 def _build_landmark_list(points: dict[int, tuple[int, int]], *, image_shape: tuple[int, int, int]) -> object:
     height, width = image_shape[:2]
     raw_points = [(width // 2, height // 2) for _ in range(21)]
@@ -69,7 +79,7 @@ class HandDetectorTests(unittest.TestCase):
     def setUp(self) -> None:
         self.image_shape = (100, 100, 3)
 
-    def test_right_hand_thumb_rule_and_four_finger_rule(self) -> None:
+    def test_mirrored_camera_swaps_backend_right_to_left_hand(self) -> None:
         result = SimpleNamespace(
             multi_hand_landmarks=[
                 _build_landmark_list(
@@ -95,11 +105,11 @@ class HandDetectorTests(unittest.TestCase):
         items = detector.detect(_dummy_frame(self.image_shape))
 
         self.assertEqual(len(items), 1)
-        self.assertEqual(items[0].handedness, "Right")
-        self.assertEqual(items[0].finger_states, (1, 1, 1, 0, 0))
-        self.assertEqual(items[0].count, 3)
+        self.assertEqual(items[0].handedness, "Left")
+        self.assertEqual(items[0].finger_states, (0, 1, 1, 0, 0))
+        self.assertEqual(items[0].count, 2)
 
-    def test_left_hand_thumb_rule_uses_mirrored_orientation(self) -> None:
+    def test_mirrored_camera_swaps_backend_left_to_right_hand(self) -> None:
         result = SimpleNamespace(
             multi_hand_landmarks=[
                 _build_landmark_list(
@@ -125,9 +135,9 @@ class HandDetectorTests(unittest.TestCase):
         items = detector.detect(_dummy_frame(self.image_shape))
 
         self.assertEqual(len(items), 1)
-        self.assertEqual(items[0].handedness, "Left")
-        self.assertEqual(items[0].finger_states, (1, 1, 0, 0, 0))
-        self.assertEqual(items[0].count, 2)
+        self.assertEqual(items[0].handedness, "Right")
+        self.assertEqual(items[0].finger_states, (0, 1, 0, 0, 0))
+        self.assertEqual(items[0].count, 1)
 
     def test_detect_returns_empty_when_no_hands_are_present(self) -> None:
         result = SimpleNamespace(multi_hand_landmarks=None, multi_handedness=None)
@@ -158,11 +168,90 @@ class HandDetectorTests(unittest.TestCase):
 
         self.assertEqual(items[0].box, (10, 15, 70, 85))
 
+    def test_tasks_backend_swaps_mirrored_right_label_to_left(self) -> None:
+        detector = _tasks_detector()
+        result = SimpleNamespace(
+            hand_landmarks=[
+                _build_landmark_list(
+                    {
+                        THUMB_MCP_INDEX: (40, 55),
+                        THUMB_TIP_INDEX: (20, 50),
+                        INDEX_FINGER_PIP_INDEX: (45, 60),
+                        INDEX_FINGER_TIP_INDEX: (45, 38),
+                        MIDDLE_FINGER_PIP_INDEX: (55, 60),
+                        MIDDLE_FINGER_TIP_INDEX: (55, 36),
+                        RING_FINGER_PIP_INDEX: (65, 60),
+                        RING_FINGER_TIP_INDEX: (65, 78),
+                        PINKY_PIP_INDEX: (75, 60),
+                        PINKY_TIP_INDEX: (75, 80),
+                    },
+                    image_shape=self.image_shape,
+                ).landmark
+            ],
+            handedness=[_task_categories("Right", 0.88)],
+        )
+
+        items = detector.to_hand_items(result, self.image_shape)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].handedness, "Left")
+        self.assertEqual(items[0].score, 0.88)
+        self.assertEqual(items[0].finger_states, (0, 1, 1, 0, 0))
+        self.assertEqual(items[0].count, 2)
+
+    def test_tasks_backend_swaps_left_and_right_handedness_lists(self) -> None:
+        detector = _tasks_detector()
+        result = SimpleNamespace(
+            hand_landmarks=[
+                _build_landmark_list(
+                    {
+                        THUMB_MCP_INDEX: (40, 55),
+                        THUMB_TIP_INDEX: (62, 45),
+                        INDEX_FINGER_PIP_INDEX: (45, 60),
+                        INDEX_FINGER_TIP_INDEX: (45, 38),
+                    },
+                    image_shape=self.image_shape,
+                ).landmark,
+                _build_landmark_list(
+                    {
+                        THUMB_MCP_INDEX: (40, 55),
+                        THUMB_TIP_INDEX: (20, 50),
+                        INDEX_FINGER_PIP_INDEX: (45, 60),
+                        INDEX_FINGER_TIP_INDEX: (45, 38),
+                    },
+                    image_shape=self.image_shape,
+                ).landmark,
+            ],
+            handedness=[
+                _task_categories("Ignored", 0.11, display_name="Left"),
+                _task_categories("Right", 0.92),
+            ],
+        )
+
+        items = detector.to_hand_items(result, self.image_shape)
+
+        self.assertEqual(tuple(item.handedness for item in items), ("Right", "Left"))
+        self.assertEqual(tuple(item.score for item in items), (0.11, 0.92))
+
+    def test_tasks_backend_returns_empty_tuple_for_empty_results(self) -> None:
+        detector = _tasks_detector()
+        result = SimpleNamespace(hand_landmarks=None, handedness=None)
+
+        items = detector.to_hand_items(result, self.image_shape)
+
+        self.assertEqual(items, ())
+
 
 def _dummy_frame(image_shape: tuple[int, int, int]):
     import numpy as np
 
     return np.zeros(image_shape, dtype=np.uint8)
+
+
+def _tasks_detector() -> HandDetector:
+    detector = HandDetector.__new__(HandDetector)
+    detector._backend = "tasks"
+    return detector
 
 
 if __name__ == "__main__":
