@@ -334,10 +334,12 @@ def configure_windows_worker_executable() -> None:
     current_executable = Path(sys.executable).resolve()
     if getattr(sys, "frozen", False):
         target_executable = current_executable
+    elif current_executable.stem.lower() == "pythonw":
+        target_executable = current_executable
     else:
-        target_executable = current_executable.with_name("pythonw.exe")
-        if not target_executable.exists():
-            return
+        # Keep debugger and terminal launches on python.exe; forcing pythonw.exe from
+        # a console-hosted parent is unstable for the fast OCR workers on Windows.
+        target_executable = current_executable
 
     try:
         mp.set_executable(str(target_executable))

@@ -173,6 +173,20 @@ class CameraRuntimeTests(unittest.TestCase):
         )
         self.assertTrue(camera_roi_has_foreground(active, roi_box=roi_box))
 
+    def test_camera_roi_foreground_helpers_accept_custom_ratios(self) -> None:
+        frame = np.full((120, 200, 3), 255, dtype=np.uint8)
+        custom_box = camera_roi_box(frame.shape, width_ratio=0.40, height_ratio=0.30)
+        x0, y0, x1, y1 = custom_box
+        frame[y0 + 6 : y1 - 6, x0 + 8 : x0 + 28] = 0
+
+        self.assertGreaterEqual(
+            camera_roi_foreground_ratio(frame, width_ratio=0.40, height_ratio=0.30),
+            config.CAMERA_ROI_MIN_FOREGROUND_RATIO,
+        )
+        self.assertTrue(
+            camera_roi_has_foreground(frame, width_ratio=0.40, height_ratio=0.30)
+        )
+
     def test_build_camera_detections_from_results_sorts_boxes(self) -> None:
         results = [
             OCRResult(text="3", score=0.98, box=[[90, 40], [120, 40], [120, 90], [90, 90]]),
@@ -1026,7 +1040,7 @@ class CameraRuntimeTests(unittest.TestCase):
         self.assertIsNotNone(runtime._ocr_process)
         runtime._stop_ocr_worker()
 
-    def test_start_ocr_worker_prefers_pythonw_executable_on_windows(self) -> None:
+    def test_start_ocr_worker_keeps_python_executable_for_windows_debug_launches(self) -> None:
         runtime = CameraOCRRuntime(
             worker_config=CameraOCRWorkerConfig(
                 dict_path="digits_dict.txt",
@@ -1040,12 +1054,33 @@ class CameraRuntimeTests(unittest.TestCase):
         with patch("camera.runtime_worker_control.sys.platform", "win32"), patch(
             "camera.runtime_worker_control.sys.executable",
             str(PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"),
-        ), patch("camera.runtime_worker_control.Path.exists", return_value=True), patch(
-            "camera.runtime_worker_control.mp.set_executable"
+        ), patch("camera.runtime_worker_control.mp.set_executable"
         ) as mocked_set_executable, patch("camera.runtime.mp.get_context", return_value=_ContextStub()):
             runtime._start_ocr_worker()
 
-        mocked_set_executable.assert_called_once()
+        mocked_set_executable.assert_called_once_with(str(PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"))
+        runtime._stop_ocr_worker()
+
+    def test_start_ocr_worker_keeps_pythonw_executable_for_windows_gui_launches(self) -> None:
+        runtime = CameraOCRRuntime(
+            worker_config=CameraOCRWorkerConfig(
+                dict_path="digits_dict.txt",
+                camera_mode=config.CAMERA_MODE_BOARD,
+                enable_mkldnn=True,
+                use_textline_orientation=False,
+            ),
+            camera_mode=config.CAMERA_MODE_BOARD,
+        )
+
+        with patch("camera.runtime_worker_control.sys.platform", "win32"), patch(
+            "camera.runtime_worker_control.sys.executable",
+            str(PROJECT_ROOT / ".venv" / "Scripts" / "pythonw.exe"),
+        ), patch("camera.runtime_worker_control.mp.set_executable") as mocked_set_executable, patch(
+            "camera.runtime.mp.get_context", return_value=_ContextStub()
+        ):
+            runtime._start_ocr_worker()
+
+        mocked_set_executable.assert_called_once_with(str(PROJECT_ROOT / ".venv" / "Scripts" / "pythonw.exe"))
         runtime._stop_ocr_worker()
 
     def test_start_ocr_worker_uses_current_executable_for_frozen_windows_gui(self) -> None:

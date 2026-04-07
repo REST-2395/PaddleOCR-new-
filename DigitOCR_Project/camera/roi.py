@@ -43,9 +43,20 @@ def crop_camera_roi(
     return frame_bgr[y0:y1, x0:x1].copy(), box
 
 
-def camera_roi_foreground_ratio(frame_bgr: np.ndarray, roi_box: CameraBox | None = None) -> float:
+def camera_roi_foreground_ratio(
+    frame_bgr: np.ndarray,
+    roi_box: CameraBox | None = None,
+    *,
+    width_ratio: float = config.CAMERA_ROI_WIDTH_RATIO,
+    height_ratio: float = config.CAMERA_ROI_HEIGHT_RATIO,
+) -> float:
     """Estimate whether the scan box contains enough foreground detail to justify OCR."""
-    roi_frame, _ = crop_camera_roi(frame_bgr, roi_box=roi_box)
+    roi_frame, _ = crop_camera_roi(
+        frame_bgr,
+        roi_box=roi_box,
+        width_ratio=width_ratio,
+        height_ratio=height_ratio,
+    )
     if roi_frame.size == 0:
         return 0.0
 
@@ -64,10 +75,17 @@ def camera_roi_has_foreground(
     frame_bgr: np.ndarray,
     *,
     roi_box: CameraBox | None = None,
+    width_ratio: float = config.CAMERA_ROI_WIDTH_RATIO,
+    height_ratio: float = config.CAMERA_ROI_HEIGHT_RATIO,
     min_ratio: float = config.CAMERA_ROI_MIN_FOREGROUND_RATIO,
 ) -> bool:
     """Return whether the ROI likely contains digits or strokes worth sending to OCR."""
-    return camera_roi_foreground_ratio(frame_bgr, roi_box=roi_box) >= max(0.0, float(min_ratio))
+    return camera_roi_foreground_ratio(
+        frame_bgr,
+        roi_box=roi_box,
+        width_ratio=width_ratio,
+        height_ratio=height_ratio,
+    ) >= max(0.0, float(min_ratio))
 
 
 def _resize_for_ocr(frame: np.ndarray, *, max_side: int) -> tuple[np.ndarray, float, float]:
