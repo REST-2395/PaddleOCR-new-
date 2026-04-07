@@ -1,0 +1,83 @@
+"""Shared constants for the hand-count camera mode."""
+
+from __future__ import annotations
+
+
+HAND_LANDMARK_COUNT = 21
+THUMB_CMC_INDEX = 1
+THUMB_MCP_INDEX = 2
+THUMB_IP_INDEX = 3
+THUMB_TIP_INDEX = 4
+INDEX_FINGER_PIP_INDEX = 6
+INDEX_FINGER_TIP_INDEX = 8
+MIDDLE_FINGER_PIP_INDEX = 10
+MIDDLE_FINGER_TIP_INDEX = 12
+RING_FINGER_PIP_INDEX = 14
+RING_FINGER_TIP_INDEX = 16
+PINKY_PIP_INDEX = 18
+PINKY_TIP_INDEX = 20
+
+HAND_CONNECTIONS: tuple[tuple[int, int], ...] = (
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 4),
+    (0, 5),
+    (5, 6),
+    (6, 7),
+    (7, 8),
+    (5, 9),
+    (9, 10),
+    (10, 11),
+    (11, 12),
+    (9, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
+    (13, 17),
+    (17, 18),
+    (18, 19),
+    (19, 20),
+    (0, 17),
+)
+
+LEFT_HAND_COLOR = (64, 196, 255)
+RIGHT_HAND_COLOR = (104, 255, 148)
+WARNING_COLOR = (0, 215, 255)
+TEXT_COLOR = (255, 255, 255)
+ROI_IDLE_COLOR = (0, 215, 255)
+ROI_ACTIVE_COLOR = (60, 210, 60)
+LANDMARK_RADIUS = 3
+LANDMARK_THICKNESS = 2
+
+HAND_TOO_MANY_WARNING = "请仅保留两只手在画面中"
+HAND_EMPTY_SUMMARY = "未检测到手"
+HAND_TOTAL_TEMPLATE = "总数：{total_count}"
+
+__all__ = [
+    "HAND_CONNECTIONS",
+    "HAND_EMPTY_SUMMARY",
+    "HAND_LANDMARK_COUNT",
+    "HAND_TOO_MANY_WARNING",
+    "HAND_TOTAL_TEMPLATE",
+    "INDEX_FINGER_PIP_INDEX",
+    "INDEX_FINGER_TIP_INDEX",
+    "LANDMARK_RADIUS",
+    "LANDMARK_THICKNESS",
+    "LEFT_HAND_COLOR",
+    "MIDDLE_FINGER_PIP_INDEX",
+    "MIDDLE_FINGER_TIP_INDEX",
+    "PINKY_PIP_INDEX",
+    "PINKY_TIP_INDEX",
+    "RIGHT_HAND_COLOR",
+    "RING_FINGER_PIP_INDEX",
+    "RING_FINGER_TIP_INDEX",
+    "ROI_ACTIVE_COLOR",
+    "ROI_IDLE_COLOR",
+    "TEXT_COLOR",
+    "THUMB_CMC_INDEX",
+    "THUMB_IP_INDEX",
+    "THUMB_MCP_INDEX",
+    "THUMB_TIP_INDEX",
+    "WARNING_COLOR",
+]

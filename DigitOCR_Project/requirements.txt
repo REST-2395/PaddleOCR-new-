@@ -1,0 +1,6 @@
+numpy>=1.26.0
+opencv-python>=4.9.0
+paddlepaddle>=3.0.0
+paddleocr>=3.0.0
+Pillow>=10.0.0
+mediapipe

@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+  ".runtime",
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+]
+
+[tool.ruff.lint]
+select = ["C901", "I"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
