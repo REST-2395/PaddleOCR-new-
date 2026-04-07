@@ -26,11 +26,11 @@ from camera.runtime import (
     stable_camera_sequence,
     summarize_camera_detections,
 )
+from camera.protocol import CameraOCRWorkerConfig
 from handcount.constants import HAND_CONNECTIONS
 from handcount.overlay import overlay_hand_count_frame
 from handcount.runtime import HandCountRuntime
 from handcount.types import HandCountPayload
-from core.recognition_service import DigitOCRService
 from desktop.messages import (
     CAMERA_IDLE_STATUS,
     CAMERA_MODE_BY_LABEL,
@@ -431,8 +431,7 @@ class CameraController:
         selected_mode = self._selected_camera_mode()
         profile = get_camera_mode_profile(selected_mode)
         return CameraOCRRuntime(
-            service_factory=self._build_local_camera_service_factory(selected_mode),
-            camera_mode=selected_mode,
+            worker_config=self._build_camera_worker_config(selected_mode),
             device_index=device_index,
             capture_size=profile.capture_size,
             ocr_interval_seconds=profile.ocr_interval_seconds,
@@ -448,27 +447,19 @@ class CameraController:
             roi_height_ratio=float(self.app.camera_roi_height_var.get()),
         )
 
-    def _build_local_camera_service_factory(self, selected_mode: str) -> Any:
+    def _build_camera_worker_config(self, selected_mode: str) -> CameraOCRWorkerConfig:
         profile = get_camera_mode_profile(selected_mode)
-        service_cache: dict[str, DigitOCRService] = {}
-
-        def get_service() -> DigitOCRService:
-            service = service_cache.get("service")
-            if service is None:
-                service = DigitOCRService(
-                    dict_path=str(self.app.dict_path),
-                    ocr_version="PP-OCRv5",
-                    score_threshold=0.3,
-                    use_gpu=False,
-                    cpu_threads=profile.cpu_threads,
-                    enable_mkldnn=profile.enable_mkldnn,
-                    use_textline_orientation=profile.use_textline_orientation,
-                    language="en",
-                )
-                service_cache["service"] = service
-            return service
-
-        return get_service
+        return CameraOCRWorkerConfig(
+            dict_path=str(self.app.dict_path),
+            ocr_version="PP-OCRv5",
+            score_threshold=0.3,
+            use_gpu=False,
+            cpu_threads=profile.cpu_threads,
+            camera_mode=selected_mode,
+            enable_mkldnn=profile.enable_mkldnn,
+            use_textline_orientation=profile.use_textline_orientation,
+            language="en",
+        )
 
     def _handle_camera_start_error(self, error: Exception, token: int) -> None:
         if token != self.app.camera_operation_token:

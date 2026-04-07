@@ -1048,6 +1048,29 @@ class CameraRuntimeTests(unittest.TestCase):
         mocked_set_executable.assert_called_once()
         runtime._stop_ocr_worker()
 
+    def test_start_ocr_worker_uses_current_executable_for_frozen_windows_gui(self) -> None:
+        runtime = CameraOCRRuntime(
+            worker_config=CameraOCRWorkerConfig(
+                dict_path="digits_dict.txt",
+                camera_mode=config.CAMERA_MODE_BOARD,
+                enable_mkldnn=True,
+                use_textline_orientation=False,
+            ),
+            camera_mode=config.CAMERA_MODE_BOARD,
+        )
+
+        frozen_executable = PROJECT_ROOT / "dist" / "DigitOCR.exe"
+        with patch("camera.runtime_worker_control.sys.platform", "win32"), patch(
+            "camera.runtime_worker_control.sys.executable",
+            str(frozen_executable),
+        ), patch("camera.runtime_worker_control.sys.frozen", True, create=True), patch(
+            "camera.runtime_worker_control.mp.set_executable"
+        ) as mocked_set_executable, patch("camera.runtime.mp.get_context", return_value=_ContextStub()):
+            runtime._start_ocr_worker()
+
+        mocked_set_executable.assert_called_once_with(str(frozen_executable))
+        runtime._stop_ocr_worker()
+
 
 if __name__ == "__main__":
     unittest.main()

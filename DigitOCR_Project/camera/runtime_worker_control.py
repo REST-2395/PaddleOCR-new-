@@ -30,7 +30,7 @@ class RuntimeWorkerControlMixin:
         if self._worker_config is None:
             return
 
-        _configure_windows_worker_executable()
+        configure_windows_worker_executable()
         context = mp.get_context("spawn")
         self._fast_processes = []
         self._fast_task_queues = []
@@ -326,17 +326,25 @@ class RuntimeWorkerControlMixin:
         return replace_queue_item_latest_only(task_queue, task)
 
 
-def _configure_windows_worker_executable() -> None:
-    """Hide spawned OCR worker consoles on Windows by preferring pythonw.exe."""
+def configure_windows_worker_executable() -> None:
+    """Hide spawned OCR worker consoles on Windows by preferring the GUI executable."""
     if sys.platform != "win32":
         return
 
     current_executable = Path(sys.executable).resolve()
-    pythonw_executable = current_executable.with_name("pythonw.exe")
-    if not pythonw_executable.exists():
-        return
+    if getattr(sys, "frozen", False):
+        target_executable = current_executable
+    else:
+        target_executable = current_executable.with_name("pythonw.exe")
+        if not target_executable.exists():
+            return
 
     try:
-        mp.set_executable(str(pythonw_executable))
+        mp.set_executable(str(target_executable))
     except Exception:
         return
+
+
+def _configure_windows_worker_executable() -> None:
+    """Backward-compatible wrapper for older call sites."""
+    configure_windows_worker_executable()

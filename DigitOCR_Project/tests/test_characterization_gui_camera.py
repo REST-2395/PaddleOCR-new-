@@ -57,6 +57,21 @@ class _WidgetStub:
 
 
 class GuiCameraCharacterizationTests(unittest.TestCase):
+    def test_main_configures_worker_executable_before_creating_gui(self) -> None:
+        events: list[str] = []
+
+        with patch.object(gui_app.mp, "freeze_support", side_effect=lambda: events.append("freeze_support")), patch.object(
+            gui_app, "configure_windows_worker_executable", side_effect=lambda: events.append("configure_worker")
+        ), patch.object(
+            gui_app,
+            "DigitOCRGuiApp",
+            return_value=SimpleNamespace(mainloop=lambda: events.append("mainloop")),
+        ) as mocked_app:
+            gui_app.main()
+
+        self.assertEqual(events, ["freeze_support", "configure_worker", "mainloop"])
+        mocked_app.assert_called_once_with()
+
     def test_gui_camera_code_only_depends_on_runtime_facade(self) -> None:
         source = (PROJECT_ROOT / "gui_app.pyw").read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(PROJECT_ROOT / "gui_app.pyw"))
@@ -198,6 +213,49 @@ class GuiCameraCharacterizationTests(unittest.TestCase):
         self.assertIn("黑板模式", board_status[-1])
         self.assertNotIn("黑板模式", digit_status[-1])
         self.assertIn("手势计数模式", hand_status[-1])
+
+    def test_build_camera_session_routes_digit_and_board_to_worker_runtime(self) -> None:
+        app = SimpleNamespace(
+            camera_mode_var=_VarStub(gui_app.CAMERA_MODE_LABELS[gui_app.CAMERA_MODE_DIGIT]),
+            camera_roi_width_var=_VarStub(0.68),
+            camera_roi_height_var=_VarStub(0.52),
+            dict_path=PROJECT_ROOT / "config" / "digits_dict.txt",
+        )
+        controller = CameraController(app, recognition_controller=SimpleNamespace(), result_panel_controller=SimpleNamespace())
+
+        with patch("desktop.controllers.camera_controller.CameraOCRRuntime") as mocked_runtime:
+            controller._build_camera_session(2)
+
+        digit_kwargs = mocked_runtime.call_args.kwargs
+        self.assertIn("worker_config", digit_kwargs)
+        self.assertNotIn("service_factory", digit_kwargs)
+        self.assertEqual(digit_kwargs["worker_config"].camera_mode, gui_app.CAMERA_MODE_DIGIT)
+
+        mocked_runtime.reset_mock()
+        app.camera_mode_var.set(gui_app.CAMERA_MODE_LABELS[gui_app.CAMERA_MODE_BOARD])
+
+        with patch("desktop.controllers.camera_controller.CameraOCRRuntime") as mocked_runtime:
+            controller._build_camera_session(3)
+
+        board_kwargs = mocked_runtime.call_args.kwargs
+        self.assertIn("worker_config", board_kwargs)
+        self.assertNotIn("service_factory", board_kwargs)
+        self.assertEqual(board_kwargs["worker_config"].camera_mode, gui_app.CAMERA_MODE_BOARD)
+
+    def test_build_camera_session_routes_hand_count_to_hand_runtime(self) -> None:
+        app = SimpleNamespace(
+            camera_mode_var=_VarStub(gui_app.CAMERA_MODE_LABELS[gui_app.CAMERA_MODE_HAND_COUNT]),
+            camera_roi_width_var=_VarStub(0.70),
+            camera_roi_height_var=_VarStub(0.50),
+            dict_path=PROJECT_ROOT / "config" / "digits_dict.txt",
+        )
+        controller = CameraController(app, recognition_controller=SimpleNamespace(), result_panel_controller=SimpleNamespace())
+
+        with patch("desktop.controllers.camera_controller.HandCountRuntime", return_value="hand-runtime") as mocked_runtime:
+            runtime = controller._build_camera_session(4)
+
+        self.assertEqual(runtime, "hand-runtime")
+        mocked_runtime.assert_called_once()
 
     def test_hand_count_detection_text_uses_total_summary(self) -> None:
         payload = HandCountPayload(

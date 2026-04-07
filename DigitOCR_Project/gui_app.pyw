@@ -32,6 +32,7 @@ from camera.runtime import (  # noqa: E402
     CameraOCRRuntime,
     CameraTrack,
 )
+from camera.runtime_worker_control import configure_windows_worker_executable  # noqa: E402
 from core.recognition_service import DigitOCRService, RecognitionOutput  # noqa: E402
 from desktop.controllers import (  # noqa: E402
     CameraController,
@@ -347,6 +348,7 @@ class DigitOCRGuiApp(tk.Tk):
 
 def main() -> None:
     mp.freeze_support()
+    configure_windows_worker_executable()
     app = DigitOCRGuiApp()
     app.mainloop()
 
