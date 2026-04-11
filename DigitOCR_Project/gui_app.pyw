@@ -13,13 +13,9 @@ from tkinter import ttk
 import numpy as np
 from PIL import ImageTk
 
-from bootstrap.support import ensure_runtime_ready
-
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-
-ensure_runtime_ready(project_root=PROJECT_ROOT)
 
 from camera.runtime import (  # noqa: E402
     CAMERA_MODE_BOARD,

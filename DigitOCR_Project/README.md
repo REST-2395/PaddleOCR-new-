@@ -1,29 +1,37 @@
 # DigitOCR Project
 
-基于 PaddleOCR 的数字识别工程，提供两种使用方式：
+基于 PaddleOCR 的数字识别工程，提供桌面 GUI 和命令行两种使用方式。
 
-- 图形界面 GUI：支持手写识别、图片识别、摄像头识别
-- 命令行 CLI：支持批量处理文件夹中的图片
-
-项目已经内置运行环境自举逻辑。一般情况下，其他人拿到工程后不需要手动先配虚拟环境，只要按下面的方式启动即可。
+- GUI 支持手写数字识别、图片识别、摄像头数字识别、摄像头黑板识别、摄像头手势计数
+- CLI 支持批量处理 `data/input/` 目录下的图片
+- 项目内置运行环境自举流程，首次启动会自动准备 `.venv`、依赖和模型缓存
 
 ## 适用场景
 
-- 识别纸面或图片中的数字
+- 识别纸面或截图中的数字
 - 识别手写数字
 - 通过摄像头实时识别数字
-- 黑板模式下识别一整排数字序列
+- 通过摄像头识别扫描框内的一整排数字序列
+- 通过摄像头统计双手手指数
 
 ## 主要功能
 
 - 手写画板识别
 - 本地图片上传识别
-- 摄像头数字模式识别
-- 摄像头黑板模式识别
+- 摄像头数字模式
+  - 居中固定扫描框
+  - 快路径候选块识别 + 完整 ROI fallback OCR
+  - 低置信度过滤与结果稳定化
+- 摄像头黑板模式
+  - 更高分辨率采集
+  - 对扫描框内整排数字做序列识别
+- 摄像头手势计数模式
+  - 基于 MediaPipe 的双手关键点检测
+  - 统计左右手伸出的手指数
+  - 超过两只手时给出提示
 - 识别结果表格展示
-- 识别结果图片保存
+- 结果图片保存
 - 识别文本复制到剪贴板
-- 批量图片识别与结果导出
 
 ## 环境要求
 
@@ -38,6 +46,7 @@
 - `paddlepaddle`
 - `paddleocr`
 - `Pillow`
+- `mediapipe`
 
 ## 快速开始
 
@@ -63,13 +72,13 @@ bash ./launch_gui.sh
 
 说明：
 
-- `gui_app.pyw` 才是桌面图形界面入口
-- 首次启动会自动检查 `.venv`、安装依赖，并在需要时准备 OCR 运行环境
-- 首次启动较慢是正常现象
+- `gui_app.pyw` 是桌面 GUI 入口
+- 首次启动会先检查 `.venv`、安装依赖，并在需要时准备 OCR 运行环境
+- 首次启动较慢属于正常现象
 
 ### 方式 2：批量处理图片
 
-把要识别的图片放到 `data/input/` 目录，然后运行：
+将要识别的图片放入 `data/input/`，然后运行：
 
 ```powershell
 .\.venv\Scripts\python.exe .\main.py
@@ -77,33 +86,32 @@ bash ./launch_gui.sh
 
 说明：
 
-- [main.py](./main.py) 是命令行批量识别入口，不是 GUI
+- [main.py](./main.py) 是命令行批量识别入口，不会打开 GUI
 - 默认读取 `data/input/`
-- 默认把带标注结果的图片写到 `data/output/`
+- 默认将带标注结果图写入 `data/output/`
 
-## 图形界面使用说明
+## 图形界面说明
 
 ### 1. 手写识别
 
-1. 打开 GUI
-2. 切到“手写识别”页签
-3. 在白色画板区域用鼠标按住左键书写数字
-4. 点击“识别手写内容”
-5. 在右侧查看识别结果、结果表格和预览图
-6. 如需重写，可点击“清空画板”
+1. 打开 GUI。
+2. 切换到“手写识别”页签。
+3. 在白色画板区域书写数字。
+4. 点击“识别手写内容”。
+5. 在右侧查看摘要、结果表格和预览图。
 
 建议：
 
-- 数字之间尽量留一点间距
-- 笔画不要太细或太淡
+- 数字之间尽量保留间距
+- 笔画不要过细
 
 ### 2. 图片识别
 
-1. 切到“图片识别”页签
-2. 点击“选择图片”
-3. 选择本地图片文件
-4. 点击“识别上传图片”
-5. 在右侧查看结果摘要、表格和预览图
+1. 切换到“图片识别”页签。
+2. 点击“选择图片”。
+3. 选择本地图片文件。
+4. 点击“识别上传图片”。
+5. 在右侧查看识别摘要、结果表格和预览图。
 
 支持格式：
 
@@ -115,22 +123,28 @@ bash ./launch_gui.sh
 - `.tiff`
 - `.webp`
 
-### 3. 摄像头识别
+### 3. 摄像头模式
 
-1. 切到“摄像头识别”页签
-2. 选择设备编号
-3. 选择识别模式
-4. 点击“启动摄像头”
-5. 将数字放入识别框内
-6. 观察实时预览、识别框和结果表格
-7. 使用 ROI 宽高滑条调整识别框大小
-8. 点击“应用识别框”使新大小生效
-9. 使用结束后点击“停止摄像头”
+1. 切换到“摄像头识别”页签。
+2. 选择设备编号。
+3. 选择模式。
+4. 按需调整扫描框宽高比例。
+5. 点击“应用识别框”。
+6. 点击“启动摄像头”。
+7. 观察实时预览、状态栏和右侧结果区域。
+8. 使用结束后点击“停止摄像头”。
 
-摄像头模式说明：
+当前摄像头共有三种模式：
 
-- 数字模式：适合识别单行、较清晰的数字
-- 黑板模式：适合识别识别框内的一整排数字序列
+- 数字模式：适合识别扫描框中的单个或少量数字，使用快路径候选块识别，并在必要时回退到完整 ROI OCR
+- 黑板模式：适合识别扫描框中的整排数字，使用更大的输入尺寸与序列 OCR
+- 手势计数模式：适合统计最多两只手的手指数，显示左右手标签、关键点和总数
+
+补充说明：
+
+- 扫描框始终位于画面中央，只调整宽高比例，不支持拖拽移动
+- 数字模式和黑板模式在扫描框前景不足时会主动跳过 OCR，减少空跑
+- 手势计数模式只统计扫描框内的手
 
 ## 命令行使用说明
 
@@ -146,7 +160,7 @@ bash ./launch_gui.sh
 .\.venv\Scripts\python.exe .\main.py --input-dir .\data\input --output-dir .\data\output
 ```
 
-### 常用参数
+### 查看帮助
 
 ```powershell
 .\.venv\Scripts\python.exe .\main.py --help
@@ -167,15 +181,16 @@ bash ./launch_gui.sh
 
 ```text
 DigitOCR_Project/
-  bootstrap/              启动前运行环境自举支持
-  camera/                 摄像头识别运行时
+  bootstrap/              启动前环境自举支持
+  camera/                 摄像头 OCR 运行时与模式配置
   config/                 字典与环境配置
-  core/                   OCR 服务、引擎、识别管线
+  core/                   OCR 服务、引擎与识别流水线
   data/
     input/                默认输入图片目录
     output/               默认输出图片目录
-  desktop/                GUI 控制器与桌面媒体逻辑
-  docs/                   项目文档与重构文档
+  desktop/                GUI 控制器与界面消息
+  docs/                   项目文档
+  handcount/              手势计数运行时、检测与叠加绘制
   tests/                  单元测试与特征测试
   gui_app.pyw             GUI 入口
   launch_gui.bat          Windows GUI 启动脚本
@@ -184,9 +199,9 @@ DigitOCR_Project/
   requirements.txt        Python 依赖
 ```
 
-## 自举机制说明
+## 环境自举说明
 
-项目带有自动环境准备流程，入口会先调用 [bootstrap/support.py](./bootstrap/support.py)：
+项目带有自动环境准备流程，`main.py` 和 `gui_app.pyw` 会先调用 [bootstrap/support.py](./bootstrap/support.py)：
 
 - 自动检查 Python 运行环境
 - 自动创建 `.venv`
@@ -199,8 +214,6 @@ DigitOCR_Project/
 - [bootstrap/support.py](./bootstrap/support.py)
 - [config/env_bootstrap.json](./config/env_bootstrap.json)
 
-如果只是普通使用，通常不需要单独操作这些文件。
-
 ## 首次运行会发生什么
 
 首次启动时，程序可能会：
@@ -208,20 +221,18 @@ DigitOCR_Project/
 - 创建 `.venv`
 - 安装 Python 依赖
 - 检查运行环境
-- 准备 PaddleOCR 相关模型
+- 下载 PaddleOCR 相关模型
+- 准备 MediaPipe 运行所需资源
 
-因此首次启动可能比较慢，属于正常现象。
+因此首次启动较慢属于正常现象。
 
-模型缓存目录通常位于：
+常见缓存与日志目录：
 
-- `.runtime/paddlex_cache/`
+- 模型缓存：`.runtime/paddlex_cache/`
+- 自举日志：`.runtime/bootstrap/logs/`
+- 自举报告：`.runtime/bootstrap/reports/`
 
-运行日志与报告通常位于：
-
-- `.runtime/bootstrap/logs/`
-- `.runtime/bootstrap/reports/`
-
-## 测试与验收
+## 测试
 
 运行全量测试：
 
@@ -229,10 +240,10 @@ DigitOCR_Project/
 .\.venv\Scripts\python.exe -m unittest
 ```
 
-运行主要识别链路相关测试：
+运行主要链路测试：
 
 ```powershell
-.\.venv\Scripts\python.exe -m unittest tests.test_image_mode.ImageModeIntegrationTests tests.test_camera_runtime tests.test_characterization_camera_digit tests.test_characterization_board_sequence
+.\.venv\Scripts\python.exe -m unittest tests.test_image_mode tests.test_camera_runtime tests.test_handcount_runtime tests.test_handcount_detector tests.test_handcount_overlay tests.test_characterization_camera_digit tests.test_characterization_board_sequence tests.test_characterization_gui_camera
 ```
 
 ## 打包
@@ -258,13 +269,13 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 ### 2. 双击 `launch_gui.bat` 没反应
 
-请优先检查：
+优先检查：
 
 - 是否安装了 Python 3.10+
-- 项目路径是否包含权限或杀毒软件限制
+- 项目路径是否受到权限或安全软件限制
 - 是否能在 PowerShell 中运行 `.\launch_gui.bat`
 
-如果仍不行，可直接尝试：
+仍不行时可直接尝试：
 
 ```powershell
 .\.venv\Scripts\pythonw.exe .\gui_app.pyw
@@ -272,11 +283,12 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 ### 3. 首次启动很慢
 
-这是正常的，通常是因为：
+通常是因为正在：
 
-- 正在创建虚拟环境
-- 正在安装依赖
-- 正在准备 OCR 模型
+- 创建虚拟环境
+- 安装依赖
+- 下载 OCR 模型
+- 初始化 MediaPipe / Paddle 相关资源
 
 ### 4. 摄像头打不开
 
@@ -284,34 +296,34 @@ powershell -ExecutionPolicy Bypass -File .\build_windows.ps1
 
 - 摄像头是否被其他程序占用
 - 设备编号是否正确
-- 是否给了系统摄像头权限
+- 是否授予了系统摄像头权限
 
 ### 5. 识别效果不理想
 
 建议优先调整：
 
-- 图片清晰度
+- 图像清晰度
 - 光照条件
 - 数字与背景对比度
-- 摄像头识别框大小
-- 数字是否位于识别框中央
+- 扫描框宽高比例
+- 目标是否位于扫描框中央
 
-## 给交付使用者的建议
+### 6. 手势计数不稳定
 
-如果是把这个工程交给别人直接使用，推荐这样说明：
+建议优先检查：
 
-1. 先解压整个项目目录，不要只拿单个 `.py` 文件
-2. Windows 用户优先双击 `launch_gui.bat`
-3. 批量识别图片时运行 `main.py`
-4. 不要删除 `.runtime`、`config`、`data` 目录
-5. 首次运行慢一点是正常的
+- 画面中是否只保留一到两只手
+- 手部是否完整位于扫描框内
+- 左右手是否有明显遮挡
+- 光照是否足够
 
 ## 相关文档
 
+- [docs/model_principle.md](./docs/model_principle.md)
 - [docs/refactor_roadmap.md](./docs/refactor_roadmap.md)
 - [docs/final_refactor_acceptance.md](./docs/final_refactor_acceptance.md)
 - [docs/environment_bootstrap.md](./docs/environment_bootstrap.md)
 
-## 许可证
+## 许可
 
-当前仓库未单独声明许可证。如需对外分发，请先补充明确的 License 文件。
+当前仓库未单独声明 License。若需要对外分发，请先补充明确的许可文件。

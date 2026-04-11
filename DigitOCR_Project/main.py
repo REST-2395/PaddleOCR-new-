@@ -7,8 +7,6 @@ import multiprocessing as mp
 import sys
 from pathlib import Path
 
-from bootstrap.support import ensure_runtime_ready
-
 
 SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
@@ -17,7 +15,6 @@ def parse_args() -> argparse.Namespace:
     project_root = Path(__file__).resolve().parent
 
     parser = argparse.ArgumentParser(description="Run digit-only OCR on images from a folder.")
-    parser.add_argument("--skip-bootstrap", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument(
         "--input-dir",
         type=Path,
@@ -85,7 +82,6 @@ def collect_images(input_dir: Path) -> list[Path]:
 
 def main() -> int:
     mp.freeze_support()
-    ensure_runtime_ready(project_root=Path(__file__).resolve().parent)
 
     import cv2
 
