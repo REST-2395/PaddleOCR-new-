@@ -1,3 +1,0 @@
-2026-04-02 18:36:35,617 [INFO] Skipping bootstrap package upgrade by request.
-2026-04-02 18:36:35,622 [INFO] Installing dependencies declared in D:\PaddleOCR\DigitOCR_Project\requirements.txt
-2026-04-02 18:36:35,623 [INFO] [Cache packages for python-runtime] D:\PaddleOCR\DigitOCR_Project\.venv\Scripts\python.exe -m pip download --requirement D:\PaddleOCR\DigitOCR_Project\requirements.txt --dest D:\PaddleOCR\DigitOCR_Project\.runtime\cache\pip --cache-dir D:\PaddleOCR\DigitOCR_Project\.runtime\cache\pip-http --prefer-binary

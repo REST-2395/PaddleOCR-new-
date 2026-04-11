@@ -1,2 +1,21 @@
 .pytest_cache/
 .mypy_cache/
+
+# Python virtual environments and runtime caches
+.venv/
+.runtime/
+DigitOCR_Project/.venv/
+DigitOCR_Project/.runtime/
+
+# Python bytecode and import caches
+__pycache__/
+*.py[cod]
+
+# Project runtime outputs
+DigitOCR_Project/data/output/
+
+# Build artifacts
+build/
+dist/
+DigitOCR_Project/build/
+DigitOCR_Project/dist/

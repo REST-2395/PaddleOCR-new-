@@ -1,6 +1,0 @@
-2026-03-19 13:33:40,383 [ERROR] Bootstrap failed: name 'ensure_virtualenv' is not defined
-Traceback (most recent call last):
-  File "D:\PaddleOCR\DigitOCR_Project\bootstrap_env.py", line 750, in main
-    venv_python = ensure_virtualenv(config, logger)
-NameError: name 'ensure_virtualenv' is not defined
-2026-03-19 13:33:40,387 [INFO] Failure report: D:\PaddleOCR\DigitOCR_Project\.runtime\bootstrap\reports\bootstrap-20260319-133340.json
